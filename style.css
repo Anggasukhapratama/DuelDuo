@@ -492,11 +492,148 @@ body > * {
     grid-template-columns: 1fr;
   }
   
+  .game-area.split-screen {
+    grid-template-columns: 1fr;
+  }
+  
   .game-title {
     font-size: 2.5rem;
   }
   
   .game-cards {
     grid-template-columns: 1fr;
+  }
+  
+  .game-header h1 {
+    font-size: 2rem;
+  }
+  
+  .player-name {
+    font-size: 1.2rem;
+  }
+  
+  .player-score {
+    font-size: 1.5rem;
+  }
+  
+  .control-btn {
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+  }
+}
+
+/* Landscape mode for mobile - FULLSCREEN */
+@media (max-width: 768px) and (orientation: landscape) {
+  body {
+    padding: 0;
+  }
+  
+  .game-container {
+    padding: 0.5rem;
+    max-width: 100%;
+  }
+  
+  .game-header {
+    margin-bottom: 0.5rem;
+  }
+  
+  .game-header h1 {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .back-btn {
+    padding: 0.4rem 1rem;
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+  }
+  
+  .game-area.split-screen {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .player-section {
+    padding: 0.5rem;
+  }
+  
+  .player-header {
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+  
+  .player-name {
+    font-size: 0.9rem;
+  }
+  
+  .player-score {
+    font-size: 1.2rem;
+  }
+  
+  .question-display {
+    font-size: 1.2rem;
+    margin: 0.5rem 0;
+    padding: 0.8rem;
+  }
+  
+  .answer-buttons {
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+  
+  .answer-btn {
+    padding: 0.8rem;
+    font-size: 1rem;
+  }
+  
+  .video-container.full-width {
+    height: 50vh;
+    max-height: 50vh;
+  }
+  
+  .game-controls {
+    padding: 0.8rem;
+    margin-top: 0.5rem;
+  }
+  
+  .control-btn {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+    margin: 0.25rem;
+  }
+  
+  .status-text {
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+  }
+  
+  #timer {
+    font-size: 1rem !important;
+    margin-top: 0.5rem !important;
+  }
+}
+
+/* Portrait mode optimization for mobile */
+@media (max-width: 768px) and (orientation: portrait) {
+  .video-container.full-width {
+    aspect-ratio: 16/9;
+  }
+  
+  .game-area.split-screen {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  body {
+    overflow-y: auto;
+  }
+  
+  .menu-container {
+    padding: 1rem;
+  }
+  
+  .game-title {
+    font-size: 2rem;
   }
 }

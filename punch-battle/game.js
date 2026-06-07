@@ -332,12 +332,31 @@ document.addEventListener('DOMContentLoaded', async () => {
   canvasShared.height = 480;
   
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ 
-      video: { width: 1280, height: 480 } 
-    });
+    // Mobile-friendly camera constraints
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    const constraints = {
+      video: {
+        width: { ideal: 1280 },
+        height: { ideal: 480 },
+        facingMode: 'user', // Front camera
+        aspectRatio: { ideal: 16/9 }
+      }
+    };
+    
+    // Request camera permission explicitly
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
     
     videoShared.srcObject = stream;
     videoShared.style.transform = 'scaleX(-1)';
+    
+    // Wait for video to be ready
+    await new Promise((resolve) => {
+      videoShared.onloadedmetadata = () => {
+        videoShared.play();
+        resolve();
+      };
+    });
     
     setupHandTracking(videoShared, canvasShared);
     
@@ -355,7 +374,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 500);
   } catch (err) {
     console.error('Error accessing camera:', err);
-    document.getElementById('status').textContent = 'Error: Tidak bisa mengakses kamera';
+    let errorMsg = 'Error: Tidak bisa mengakses kamera. ';
+    
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      errorMsg += 'Izinkan akses kamera di pengaturan browser!';
+    } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+      errorMsg += 'Kamera tidak ditemukan!';
+    } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+      errorMsg += 'Kamera sedang digunakan aplikasi lain!';
+    } else if (err.name === 'OverconstrainedError') {
+      errorMsg += 'Kamera tidak support resolusi yang diminta!';
+    } else {
+      errorMsg += err.message;
+    }
+    
+    document.getElementById('status').textContent = errorMsg;
+    document.getElementById('start-btn').disabled = true;
   }
   
   document.getElementById('start-btn').addEventListener('click', startGame);
