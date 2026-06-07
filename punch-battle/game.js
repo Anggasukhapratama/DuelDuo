@@ -1,6 +1,6 @@
 // MediaPipe Hands sudah di-load via CDN, gunakan global objects
-const { Hands } = window;
-const { Camera } = window;
+// const { Hands } = window;
+// const { Camera } = window;
 
 let gameState = {
   isPlaying: false,
@@ -19,7 +19,7 @@ let readyCheckInterval = null;
 
 // Setup MediaPipe Hands untuk detect 2 tangan
 function setupHandTracking(videoElement, canvasElement) {
-  const hands = new Hands({
+  const hands = new window.Hands({
     locateFile: (file) => {
       return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
     }
@@ -36,6 +36,9 @@ function setupHandTracking(videoElement, canvasElement) {
     const ctx = canvasElement.getContext('2d');
     ctx.save();
     ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+    
+    // Draw video frame first
+    ctx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
     
     // Draw vertical divider line in the middle - NEON STYLE
     const gradient = ctx.createLinearGradient(canvasElement.width / 2 - 3, 0, canvasElement.width / 2 + 3, 0);
@@ -99,7 +102,8 @@ function setupHandTracking(videoElement, canvasElement) {
     ctx.restore();
   });
 
-  const camera = new Camera(videoElement, {
+  // Use simple camera setup
+  const camera = new window.Camera(videoElement, {
     onFrame: async () => {
       await hands.send({ image: videoElement });
     },
