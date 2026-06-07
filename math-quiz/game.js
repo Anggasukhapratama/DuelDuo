@@ -1,5 +1,6 @@
-import { Hands } from '@mediapipe/hands';
-import { Camera } from '@mediapipe/camera_utils';
+// MediaPipe Hands sudah di-load via CDN, gunakan global objects
+const { Hands } = window;
+const { Camera } = window;
 
 let gameState = {
   isPlaying: false,
