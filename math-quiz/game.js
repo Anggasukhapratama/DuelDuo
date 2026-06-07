@@ -6,7 +6,8 @@ let gameState = {
   timeLeft: 120,
   scores: { p1: 0, p2: 0 },
   currentQuestion: { p1: null, p2: null },
-  canAnswer: { p1: true, p2: true }
+  canAnswer: { p1: true, p2: true },
+  handsDetected: { p1: false, p2: false }
 };
 
 const GAME_DURATION = 120;
@@ -138,29 +139,52 @@ function setupHandTracking(videoElement, canvasElement) {
     ctx.save();
     ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
     
-    // Draw vertical divider line
-    ctx.strokeStyle = '#CAE8BD';
-    ctx.lineWidth = 6;
+    // Draw vertical divider line - NEON STYLE
+    const gradient = ctx.createLinearGradient(canvasElement.width / 2 - 3, 0, canvasElement.width / 2 + 3, 0);
+    gradient.addColorStop(0, 'rgba(0, 245, 255, 0)');
+    gradient.addColorStop(0.5, 'rgba(0, 245, 255, 1)');
+    gradient.addColorStop(1, 'rgba(0, 245, 255, 0)');
+    
+    ctx.strokeStyle = gradient;
+    ctx.lineWidth = 4;
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = '#00F5FF';
     ctx.setLineDash([15, 10]);
     ctx.beginPath();
     ctx.moveTo(canvasElement.width / 2, 0);
     ctx.lineTo(canvasElement.width / 2, canvasElement.height);
     ctx.stroke();
     ctx.setLineDash([]);
+    ctx.shadowBlur = 0;
     
-    // Draw text labels
-    ctx.font = 'bold 24px Arial';
-    ctx.fillStyle = 'rgba(202, 232, 189, 0.8)';
+    // Draw text labels - NEON GLOW
+    ctx.font = 'bold 28px Orbitron, Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('PLAYER 1', canvasElement.width * 0.25, 40);
-    ctx.fillText('PLAYER 2', canvasElement.width * 0.75, 40);
+    
+    // Player 1 label
+    ctx.fillStyle = '#FF006E';
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = '#FF006E';
+    ctx.fillText('PLAYER 1', canvasElement.width * 0.25, 45);
+    
+    // Player 2 label
+    ctx.fillStyle = '#00F5FF';
+    ctx.shadowColor = '#00F5FF';
+    ctx.fillText('PLAYER 2', canvasElement.width * 0.75, 45);
+    ctx.shadowBlur = 0;
+    
+    // Reset hand detection
+    gameState.handsDetected.p1 = false;
+    gameState.handsDetected.p2 = false;
     
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
       results.multiHandLandmarks.forEach((landmarks) => {
         const indexTip = landmarks[8];
         const playerId = indexTip.x < 0.5 ? 'p1' : 'p2';
         
-        drawHandPointer(ctx, landmarks);
+        gameState.handsDetected[playerId] = true;
+        
+        drawHandPointer(ctx, landmarks, playerId);
         
         if (gameState.isPlaying && gameState.canAnswer[playerId]) {
           detectButtonHover(landmarks, playerId, canvasElement, ctx);
@@ -228,21 +252,29 @@ function setupHandTracking(videoElement, canvasElement) {
   camera.start();
 }
 
-function drawHandPointer(ctx, landmarks) {
+function drawHandPointer(ctx, landmarks, playerId) {
   const indexTip = landmarks[8];
   const x = indexTip.x * ctx.canvas.width;
   const y = indexTip.y * ctx.canvas.height;
   
+  const color = playerId === 'p1' ? '#FF006E' : '#00F5FF';
+  
+  // Outer glow
+  ctx.beginPath();
+  ctx.arc(x, y, 30, 0, 2 * Math.PI);
+  ctx.fillStyle = `${color}22`;
+  ctx.fill();
+  
   // Draw pointer
   ctx.beginPath();
   ctx.arc(x, y, 20, 0, 2 * Math.PI);
-  ctx.fillStyle = '#FF5722';
+  ctx.fillStyle = color;
+  ctx.shadowBlur = 25;
+  ctx.shadowColor = color;
   ctx.fill();
-  ctx.strokeStyle = '#fff';
-  ctx.lineWidth = 4;
-  ctx.stroke();
+  ctx.shadowBlur = 0;
   
-  // Draw inner dot
+  // Inner dot
   ctx.beginPath();
   ctx.arc(x, y, 8, 0, 2 * Math.PI);
   ctx.fillStyle = '#fff';
@@ -252,17 +284,26 @@ function drawHandPointer(ctx, landmarks) {
 function drawHoverProgress(ctx, x, y, progress) {
   const centerX = x * ctx.canvas.width;
   const centerY = y * ctx.canvas.height;
-  const radius = 30;
+  const radius = 35;
   
-  // Draw progress arc
+  // Draw progress arc - NEON STYLE
   ctx.beginPath();
   ctx.arc(centerX, centerY, radius, -Math.PI / 2, (-Math.PI / 2) + (progress * 2 * Math.PI));
-  ctx.strokeStyle = '#4CAF50';
-  ctx.lineWidth = 6;
+  ctx.strokeStyle = '#39FF14';
+  ctx.lineWidth = 8;
+  ctx.shadowBlur = 20;
+  ctx.shadowColor = '#39FF14';
   ctx.stroke();
+  ctx.shadowBlur = 0;
 }
 
 function startGame() {
+  // Check if both hands are detected
+  if (!gameState.handsDetected.p1 || !gameState.handsDetected.p2) {
+    document.getElementById('status').textContent = '⚠️ Kedua pemain harus terdeteksi dulu! Posisikan tangan di area masing-masing';
+    return;
+  }
+  
   gameState.isPlaying = true;
   gameState.timeLeft = GAME_DURATION;
   gameState.scores = { p1: 0, p2: 0 };
@@ -277,7 +318,7 @@ function startGame() {
   
   document.getElementById('start-btn').disabled = true;
   document.getElementById('stop-btn').disabled = false;
-  document.getElementById('status').textContent = 'Game dimulai! Tunjuk jawaban dengan tangan!';
+  document.getElementById('status').textContent = '🔥 Game dimulai! Tunjuk jawaban dengan tangan!';
   
   // Timer countdown
   const timerInterval = setInterval(() => {
@@ -289,7 +330,7 @@ function startGame() {
     gameState.timeLeft--;
     const minutes = Math.floor(gameState.timeLeft / 60);
     const seconds = gameState.timeLeft % 60;
-    document.getElementById('timer').textContent = `Waktu: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+    document.getElementById('timer').textContent = `⏱️ Waktu: ${minutes}:${seconds.toString().padStart(2, '0')}`;
     
     if (gameState.timeLeft <= 0) {
       endGame();
@@ -305,8 +346,8 @@ function endGame() {
   
   document.getElementById('status').textContent = 
     winner === 'SERI' ? 
-    `Game Selesai! SERI! (${gameState.scores.p1} - ${gameState.scores.p2})` :
-    `Game Selesai! ${winner} MENANG! (${gameState.scores.p1} - ${gameState.scores.p2})`;
+    `🎮 Game Selesai! SERI! (${gameState.scores.p1} - ${gameState.scores.p2})` :
+    `🏆 Game Selesai! ${winner} MENANG! (${gameState.scores.p1} - ${gameState.scores.p2})`;
   
   document.getElementById('timer').textContent = '';
   document.getElementById('start-btn').disabled = false;
@@ -340,7 +381,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     setupHandTracking(videoShared, canvasShared);
     
-    document.getElementById('status').textContent = 'Kamera aktif! Player 1 di kiri, Player 2 di kanan';
+    document.getElementById('status').textContent = '📹 Kamera aktif! Tunjukkan tangan untuk siap bermain';
+    
+    // Check hand detection status
+    setInterval(() => {
+      const p1Status = gameState.handsDetected.p1 ? '✅' : '❌';
+      const p2Status = gameState.handsDetected.p2 ? '✅' : '❌';
+      
+      if (!gameState.isPlaying) {
+        document.getElementById('status').textContent = 
+          `Player 1: ${p1Status} | Player 2: ${p2Status} | ${gameState.handsDetected.p1 && gameState.handsDetected.p2 ? '✅ Siap bermain!' : '⚠️ Tunjukkan tangan di area masing-masing'}`;
+      }
+    }, 500);
   } catch (err) {
     console.error('Error accessing camera:', err);
     document.getElementById('status').textContent = 'Error: Tidak bisa mengakses kamera';

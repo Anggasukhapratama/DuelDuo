@@ -5,7 +5,8 @@ let gameState = {
   isPlaying: false,
   timeLeft: 60,
   scores: { p1: 0, p2: 0 },
-  targets: { p1: [], p2: [] }
+  targets: { p1: [], p2: [] },
+  handsDetected: { p1: false, p2: false }
 };
 
 const TARGET_SPAWN_INTERVAL = 1500;
@@ -13,6 +14,7 @@ const TARGET_LIFETIME = 3000;
 const GAME_DURATION = 60;
 
 let handsTrackers = { p1: null, p2: null };
+let readyCheckInterval = null;
 
 // Setup MediaPipe Hands untuk detect 2 tangan
 function setupHandTracking(videoElement, canvasElement) {
@@ -34,26 +36,47 @@ function setupHandTracking(videoElement, canvasElement) {
     ctx.save();
     ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
     
-    // Draw vertical divider line in the middle
-    ctx.strokeStyle = '#CAE8BD';
-    ctx.lineWidth = 6;
+    // Draw vertical divider line in the middle - NEON STYLE
+    const gradient = ctx.createLinearGradient(canvasElement.width / 2 - 3, 0, canvasElement.width / 2 + 3, 0);
+    gradient.addColorStop(0, 'rgba(0, 245, 255, 0)');
+    gradient.addColorStop(0.5, 'rgba(0, 245, 255, 1)');
+    gradient.addColorStop(1, 'rgba(0, 245, 255, 0)');
+    
+    ctx.strokeStyle = gradient;
+    ctx.lineWidth = 4;
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = '#00F5FF';
     ctx.setLineDash([15, 10]);
     ctx.beginPath();
     ctx.moveTo(canvasElement.width / 2, 0);
     ctx.lineTo(canvasElement.width / 2, canvasElement.height);
     ctx.stroke();
     ctx.setLineDash([]);
+    ctx.shadowBlur = 0;
     
-    // Draw text labels
-    ctx.font = 'bold 24px Arial';
-    ctx.fillStyle = 'rgba(202, 232, 189, 0.8)';
+    // Draw text labels - NEON GLOW
+    ctx.font = 'bold 28px Orbitron, Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('PLAYER 1', canvasElement.width * 0.25, 40);
-    ctx.fillText('PLAYER 2', canvasElement.width * 0.75, 40);
+    
+    // Player 1 label
+    ctx.fillStyle = '#FF006E';
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = '#FF006E';
+    ctx.fillText('PLAYER 1', canvasElement.width * 0.25, 45);
+    
+    // Player 2 label
+    ctx.fillStyle = '#00F5FF';
+    ctx.shadowColor = '#00F5FF';
+    ctx.fillText('PLAYER 2', canvasElement.width * 0.75, 45);
+    ctx.shadowBlur = 0;
     
     // Draw targets for both players
     drawTargets(ctx, 'p1');
     drawTargets(ctx, 'p2');
+    
+    // Reset hand detection
+    gameState.handsDetected.p1 = false;
+    gameState.handsDetected.p2 = false;
     
     // Process detected hands
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
@@ -62,7 +85,9 @@ function setupHandTracking(videoElement, canvasElement) {
         const indexTip = landmarks[8];
         const playerId = indexTip.x < 0.5 ? 'p1' : 'p2';
         
-        drawHand(ctx, landmarks);
+        gameState.handsDetected[playerId] = true;
+        
+        drawHand(ctx, landmarks, playerId);
         
         if (gameState.isPlaying) {
           checkPunchCollision(landmarks, playerId);
@@ -84,18 +109,33 @@ function setupHandTracking(videoElement, canvasElement) {
   camera.start();
 }
 
-function drawHand(ctx, landmarks) {
+function drawHand(ctx, landmarks, playerId) {
   const indexTip = landmarks[8];
   const x = indexTip.x * ctx.canvas.width;
   const y = indexTip.y * ctx.canvas.height;
   
+  const color = playerId === 'p1' ? '#FF006E' : '#00F5FF';
+  
+  // Outer glow
+  ctx.beginPath();
+  ctx.arc(x, y, 25, 0, 2 * Math.PI);
+  ctx.fillStyle = `${color}33`;
+  ctx.fill();
+  
+  // Main circle
   ctx.beginPath();
   ctx.arc(x, y, 15, 0, 2 * Math.PI);
-  ctx.fillStyle = '#FF5722';
+  ctx.fillStyle = color;
+  ctx.shadowBlur = 20;
+  ctx.shadowColor = color;
   ctx.fill();
-  ctx.strokeStyle = '#fff';
-  ctx.lineWidth = 3;
-  ctx.stroke();
+  ctx.shadowBlur = 0;
+  
+  // Inner dot
+  ctx.beginPath();
+  ctx.arc(x, y, 6, 0, 2 * Math.PI);
+  ctx.fillStyle = '#fff';
+  ctx.fill();
 }
 
 function spawnTarget(playerId) {
@@ -121,6 +161,7 @@ function spawnTarget(playerId) {
 
 function drawTargets(ctx, playerId) {
   const targets = gameState.targets[playerId];
+  const color = playerId === 'p1' ? '#FF006E' : '#8B00FF';
   
   targets.forEach(target => {
     const x = target.x * ctx.canvas.width;
@@ -131,30 +172,42 @@ function drawTargets(ctx, playerId) {
     const pulse = Math.sin(Date.now() / 200) * 5;
     const radius = target.radius + pulse;
     
+    // Outer glow
+    ctx.beginPath();
+    ctx.arc(x, y, radius + 10, 0, 2 * Math.PI);
+    ctx.fillStyle = `${color}22`;
+    ctx.fill();
+    
     // Outer circle
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, 2 * Math.PI);
-    ctx.fillStyle = `rgba(76, 175, 80, ${opacity * 0.3})`;
+    ctx.fillStyle = `${color}${Math.floor(opacity * 50).toString(16).padStart(2, '0')}`;
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = color;
     ctx.fill();
     
     // Middle circle
     ctx.beginPath();
     ctx.arc(x, y, radius * 0.7, 0, 2 * Math.PI);
-    ctx.fillStyle = `rgba(124, 179, 66, ${opacity * 0.5})`;
+    ctx.fillStyle = `${color}${Math.floor(opacity * 100).toString(16).padStart(2, '0')}`;
     ctx.fill();
     
     // Center circle
     ctx.beginPath();
     ctx.arc(x, y, radius * 0.4, 0, 2 * Math.PI);
-    ctx.fillStyle = `rgba(139, 195, 74, ${opacity})`;
+    ctx.fillStyle = color;
     ctx.fill();
+    ctx.shadowBlur = 0;
     
     // Text
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 16px Arial';
+    ctx.font = 'bold 18px Orbitron, Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#000';
     ctx.fillText('PUNCH!', x, y);
+    ctx.shadowBlur = 0;
   });
 }
 
@@ -187,9 +240,12 @@ function showHitEffect(canvas, x, y) {
     
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, 2 * Math.PI);
-    ctx.strokeStyle = `rgba(255, 235, 59, ${1 - radius / 80})`;
+    ctx.strokeStyle = `rgba(57, 255, 20, ${1 - radius / 80})`;
     ctx.lineWidth = 5;
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = '#39FF14';
     ctx.stroke();
+    ctx.shadowBlur = 0;
     
     radius += 5;
     requestAnimationFrame(animate);
@@ -203,6 +259,12 @@ function updateScore(playerId) {
 }
 
 function startGame() {
+  // Check if both hands are detected
+  if (!gameState.handsDetected.p1 || !gameState.handsDetected.p2) {
+    document.getElementById('status').textContent = '⚠️ Kedua pemain harus terdeteksi dulu! Posisikan tangan di area masing-masing';
+    return;
+  }
+  
   gameState.isPlaying = true;
   gameState.timeLeft = GAME_DURATION;
   gameState.scores = { p1: 0, p2: 0 };
@@ -213,7 +275,7 @@ function startGame() {
   
   document.getElementById('start-btn').disabled = true;
   document.getElementById('stop-btn').disabled = false;
-  document.getElementById('status').textContent = 'Game dimulai! Player 1 di kiri, Player 2 di kanan!';
+  document.getElementById('status').textContent = '🔥 Game dimulai! Player 1 di kiri, Player 2 di kanan!';
   
   const spawnInterval = setInterval(() => {
     if (!gameState.isPlaying) {
@@ -231,7 +293,7 @@ function startGame() {
     }
     
     gameState.timeLeft--;
-    document.getElementById('timer').textContent = `Waktu: ${gameState.timeLeft}s`;
+    document.getElementById('timer').textContent = `⏱️ Waktu: ${gameState.timeLeft}s`;
     
     if (gameState.timeLeft <= 0) {
       endGame();
@@ -247,8 +309,8 @@ function endGame() {
   
   document.getElementById('status').textContent = 
     winner === 'SERI' ? 
-    `Game Selesai! SERI! (${gameState.scores.p1} - ${gameState.scores.p2})` :
-    `Game Selesai! ${winner} MENANG! (${gameState.scores.p1} - ${gameState.scores.p2})`;
+    `🎮 Game Selesai! SERI! (${gameState.scores.p1} - ${gameState.scores.p2})` :
+    `🏆 Game Selesai! ${winner} MENANG! (${gameState.scores.p1} - ${gameState.scores.p2})`;
   
   document.getElementById('timer').textContent = '';
   document.getElementById('start-btn').disabled = false;
@@ -279,7 +341,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     setupHandTracking(videoShared, canvasShared);
     
-    document.getElementById('status').textContent = 'Kamera aktif! Player 1 di kiri, Player 2 di kanan';
+    document.getElementById('status').textContent = '📹 Kamera aktif! Tunjukkan tangan untuk siap bermain';
+    
+    // Check hand detection status
+    setInterval(() => {
+      const p1Status = gameState.handsDetected.p1 ? '✅' : '❌';
+      const p2Status = gameState.handsDetected.p2 ? '✅' : '❌';
+      
+      if (!gameState.isPlaying) {
+        document.getElementById('status').textContent = 
+          `Player 1: ${p1Status} | Player 2: ${p2Status} | ${gameState.handsDetected.p1 && gameState.handsDetected.p2 ? '✅ Siap bermain!' : '⚠️ Tunjukkan tangan di area masing-masing'}`;
+      }
+    }, 500);
   } catch (err) {
     console.error('Error accessing camera:', err);
     document.getElementById('status').textContent = 'Error: Tidak bisa mengakses kamera';
