@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Punch Battle - Gesture Games</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="game-container">
+    <div class="game-header">
+      <h1>👊 Punch Battle</h1>
+      <p>Pukul target sebanyak-banyaknya!</p>
+      <a href="/" class="back-btn">← Kembali ke Menu</a>
+    </div>
+
+    <!-- Score Display -->
+    <div class="game-area split-screen">
+      <div class="player-section">
+        <div class="player-header">
+          <span class="player-name">Pemain 1 (Kiri)</span>
+          <span class="player-score" id="score-p1">0</span>
+        </div>
+      </div>
+
+      <div class="player-section">
+        <div class="player-header">
+          <span class="player-name">Pemain 2 (Kanan)</span>
+          <span class="player-score" id="score-p2">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Single Shared Video -->
+    <div class="video-container full-width">
+      <video id="video-shared" autoplay playsinline></video>
+      <canvas id="canvas-shared"></canvas>
+    </div>
+
+    <div class="game-controls">
+      <button id="start-btn" class="control-btn">Mulai Game</button>
+      <button id="stop-btn" class="control-btn" disabled>Stop Game</button>
+      <p class="status-text" id="status">Klik "Mulai Game" untuk memulai</p>
+      <p id="timer" style="font-size: 1.5rem; margin-top: 1rem; font-weight: bold;"></p>
+    </div>
+  </div>
+
+  <script type="module" src="/punch-battle/game.js"></script>
+</body>
+</html>
